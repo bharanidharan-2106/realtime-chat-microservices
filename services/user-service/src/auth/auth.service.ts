@@ -16,7 +16,8 @@ export class AuthService {
   constructor(
     private readonly userService: UserService,
     private readonly jwtService: JwtService,
-    @Inject('NOTIFICATION_SERVICE') private readonly notificationClient: ClientProxy,
+    @Inject('NOTIFICATION_SERVICE')
+    private readonly notificationClient: ClientProxy,
   ) {}
 
   async register(dto: RegisterDto) {
