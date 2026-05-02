@@ -10,6 +10,8 @@ import {
 import { Server, Socket } from 'socket.io';
 import { JwtService } from '@nestjs/jwt';
 import { ChatService } from './chat.service';
+import { Inject } from '@nestjs/common';
+import { ClientProxy, EventPattern, Payload } from '@nestjs/microservices';
 
 @WebSocketGateway({
   namespace: '/chat',
@@ -22,6 +24,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   constructor(
     private readonly jwtService: JwtService,
     private readonly chatService: ChatService,
+    @Inject('MESSAGE_SERVICE') private readonly messageClient: ClientProxy,
   ) {}
 
   async handleConnection(client: Socket) {
@@ -70,6 +73,13 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     // Broadcast to all clients in the room
     this.server.to(payload.roomId).emit('new_message', message);
 
+    // Save to message-service via RabbitMQ
+    this.messageClient.emit('message.create', {
+      roomId: payload.roomId,
+      senderId: client.data.userId,
+      content: payload.content,
+    });
+
     return message;
   }
 
@@ -106,5 +116,24 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       userId: client.data.userId,
       roomId: payload.roomId,
     });
+  }
+
+  // Handle invitation acceptance to join users to the new room immediately
+  @EventPattern('invitation.accepted')
+  async handleInvitationAccepted(@Payload() data: { roomId: string; participants: string[] }) {
+    // Find all connected sockets for these participants and make them join the room
+    const sockets = await this.server.fetchSockets();
+    for (const socket of sockets) {
+      if (data.participants.includes(socket.data.userId)) {
+        socket.join(data.roomId);
+        // Tell the client to refresh their room list or navigate
+        socket.emit('room_created', { roomId: data.roomId });
+      }
+    }
+  }
+
+  @EventPattern('messages.read')
+  async handleMessagesRead(@Payload() data: { roomId: string; userId: string }) {
+    this.server.to(data.roomId).emit('messages_read', data);
   }
 }

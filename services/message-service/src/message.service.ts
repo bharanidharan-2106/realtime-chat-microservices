@@ -47,11 +47,13 @@ export class MessageService {
       query._id = { $lt: before };
     }
 
-    return this.messageModel
+    const messages = await this.messageModel
       .find(query)
       .sort({ createdAt: -1 })
       .limit(limit)
       .exec();
+
+    return messages.reverse();
   }
 
   async markAsRead(messageId: string, userId: string): Promise<Message | null> {
@@ -62,5 +64,15 @@ export class MessageService {
         { new: true },
       )
       .exec();
+  }
+
+  async markRoomAsRead(roomId: string, userId: string): Promise<void> {
+    await this.messageModel.updateMany(
+      { roomId, readBy: { $ne: userId } },
+      { $addToSet: { readBy: userId } }
+    ).exec();
+    
+    // Notify other participants via RabbitMQ
+    this.chatClient.emit('messages.read', { roomId, userId });
   }
 }

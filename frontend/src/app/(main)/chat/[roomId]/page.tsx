@@ -1,17 +1,22 @@
 'use client';
 
-import { useEffect } from 'react';
+import { use, useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { useChatStore } from '@/stores/chatStore';
 import { getChatSocket } from '@/lib/socket';
 import api from '@/lib/api';
 import ChatWindow from '@/components/chat/ChatWindow';
 
-export default function ChatRoomPage() {
-  const { roomId } = useParams<{ roomId: string }>();
+export default function ChatRoomPage({ params }: { params: any }) {
+  // Support both Next.js 14 (sync) and 15+ (async/Promise) params
+  const resolvedParams = params instanceof Promise ? use(params) : params;
+  const roomId = resolvedParams?.roomId;
+  
   const { setActiveRoom, setMessages, messages } = useChatStore();
 
   useEffect(() => {
+    if (!roomId) return;
+    
     setActiveRoom(roomId);
 
     // Join room via socket
@@ -22,7 +27,12 @@ export default function ChatRoomPage() {
     if (!messages[roomId]) {
       api.get(`/messages/${roomId}`).then(({ data }) => {
         setMessages(roomId, data.map((m: any) => ({ ...m, id: m._id || m.id })));
+        // Mark as read after fetching
+        api.patch(`/messages/room/${roomId}/read`).catch(console.error);
       }).catch(console.error);
+    } else {
+      // Room already loaded, still mark new messages as read
+      api.patch(`/messages/room/${roomId}/read`).catch(console.error);
     }
 
     return () => {
@@ -30,6 +40,10 @@ export default function ChatRoomPage() {
       setActiveRoom(null);
     };
   }, [roomId, setActiveRoom, setMessages, messages]);
+
+  if (!roomId) {
+    return <div className="flex-1 flex items-center justify-center">Loading chat...</div>;
+  }
 
   return <ChatWindow roomId={roomId} />;
 }

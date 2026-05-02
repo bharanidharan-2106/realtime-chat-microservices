@@ -16,6 +16,7 @@ export interface Message {
   type: 'text' | 'image' | 'file';
   timestamp: string;
   createdAt?: string;
+  readBy: string[];
 }
 
 export interface Room {
@@ -24,6 +25,7 @@ export interface Room {
   name: string;
   type: 'group' | 'direct';
   participants: string[];
+  participantNames?: Record<string, string>;
   lastMessageAt?: string;
   createdBy: string;
 }
@@ -39,4 +41,14 @@ export interface Notification {
   message: string;
   timestamp: string;
   read: boolean;
+}
+
+export interface Invitation {
+  _id: string;
+  senderId: string;
+  senderEmail: string;
+  senderUsername: string;
+  receiverEmail: string;
+  status: 'pending' | 'accepted' | 'rejected';
+  createdAt: string;
 }

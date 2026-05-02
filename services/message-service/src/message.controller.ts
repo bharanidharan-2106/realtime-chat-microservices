@@ -12,6 +12,7 @@ import {
 import { MessageService } from './message.service';
 import { SendMessageDto } from './dto/send-message.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { EventPattern, Payload } from '@nestjs/microservices';
 
 @Controller('messages')
 export class MessageController {
@@ -21,6 +22,15 @@ export class MessageController {
   @UseGuards(JwtAuthGuard)
   async sendMessage(@Body() dto: SendMessageDto, @Req() req: any) {
     return this.messageService.sendMessage(dto, req.user.userId);
+  }
+
+  @EventPattern('message.create')
+  async handleMessageCreate(@Payload() data: { roomId: string, content: string, senderId: string }) {
+    return this.messageService.sendMessage({
+      roomId: data.roomId,
+      content: data.content,
+      type: 'text'
+    }, data.senderId);
   }
 
   @Get(':roomId')
@@ -41,5 +51,11 @@ export class MessageController {
   @UseGuards(JwtAuthGuard)
   async markAsRead(@Param('id') id: string, @Req() req: any) {
     return this.messageService.markAsRead(id, req.user.userId);
+  }
+
+  @Patch('room/:roomId/read')
+  @UseGuards(JwtAuthGuard)
+  async markRoomAsRead(@Param('roomId') roomId: string, @Req() req: any) {
+    return this.messageService.markRoomAsRead(roomId, req.user.userId);
   }
 }

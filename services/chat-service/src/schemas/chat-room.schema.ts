@@ -12,6 +12,9 @@ export class ChatRoom extends Document {
   @Prop({ type: [String] })
   participants: string[];
 
+  @Prop({ type: Object })
+  participantNames: Record<string, string>;
+
   @Prop({ required: true })
   createdBy: string;
 

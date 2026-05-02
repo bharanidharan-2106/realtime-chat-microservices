@@ -7,8 +7,10 @@ interface TypingIndicatorProps {
   roomId: string;
 }
 
+const EMPTY_USERS: string[] = [];
+
 export default function TypingIndicator({ roomId }: TypingIndicatorProps) {
-  const typingUsers = useChatStore((s) => s.typingUsers[roomId] || []);
+  const typingUsers = useChatStore((s) => s.typingUsers[roomId] || EMPTY_USERS);
   const currentUserId = useAuthStore((s) => s.user?.id);
 
   const othersTyping = typingUsers.filter((id) => id !== currentUserId);

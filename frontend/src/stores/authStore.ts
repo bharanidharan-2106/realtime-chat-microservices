@@ -31,11 +31,15 @@ export const useAuthStore = create<AuthState>((set) => ({
     const token = Cookies.get('accessToken');
     if (token) {
       try {
-        const decoded = jwtDecode<{ sub: string; email: string }>(token);
+        const decoded = jwtDecode<{ sub: string; email: string; username?: string }>(token);
         set({
           token,
           isAuthenticated: true,
-          user: { id: decoded.sub, email: decoded.email, username: decoded.email.split('@')[0] },
+          user: { 
+            id: decoded.sub, 
+            email: decoded.email, 
+            username: decoded.username || decoded.email.split('@')[0] 
+          },
         });
       } catch {
         Cookies.remove('accessToken');

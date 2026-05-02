@@ -10,15 +10,16 @@ import Sidebar from '@/components/layout/Sidebar';
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuthStore();
-  const { setRooms, addMessage } = useChatStore();
+  const { setRooms, addMessage, setInvitations } = useChatStore();
   const { setUserOnline, setUserOffline } = usePresenceStore();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
     if (!isAuthenticated) return;
 
-    // Fetch rooms
+    // Fetch rooms and invitations
     api.get('/rooms').then(({ data }) => setRooms(data)).catch(console.error);
+    api.get('/invitations').then(({ data }) => setInvitations(data)).catch(console.error);
 
     // Connect sockets
     const chat = getChatSocket();
@@ -31,6 +32,16 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
 
     chat.on('new_message', (msg) => {
       addMessage(msg.roomId, { ...msg, id: msg.messageId || msg._id || msg.id });
+    });
+
+    chat.on('room_created', ({ roomId }) => {
+      api.get('/rooms').then(({ data }) => setRooms(data)).catch(console.error);
+      api.get('/invitations').then(({ data }) => setInvitations(data)).catch(console.error);
+    });
+
+    chat.on('messages_read', ({ roomId, userId }) => {
+      // We'll add this action to chatStore
+      useChatStore.getState().markMessagesAsRead(roomId, userId);
     });
 
     presence.on('presence_update', (data: { userId: string; isOnline: boolean }) => {

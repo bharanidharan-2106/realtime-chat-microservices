@@ -25,9 +25,7 @@ import { HealthModule } from './health/health.module';
         options: {
           urls: [process.env.RABBITMQ_URL || 'amqp://localhost:5672'],
           queue: 'notification_queue',
-          queueOptions: {
-            durable: false,
-          },
+          queueOptions: { durable: true },
         },
       },
       {
@@ -36,9 +34,7 @@ import { HealthModule } from './health/health.module';
         options: {
           urls: [process.env.RABBITMQ_URL || 'amqp://localhost:5672'],
           queue: 'chat_queue',
-          queueOptions: {
-            durable: false,
-          },
+          queueOptions: { durable: true },
         },
       },
     ]),
