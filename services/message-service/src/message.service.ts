@@ -1,15 +1,22 @@
 import { Injectable, Inject } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { ClientProxy } from '@nestjs/microservices';
 import { Message } from './schemas/message.schema';
 import { SendMessageDto } from './dto/send-message.dto';
 
+interface MessageDocument extends Message {
+  _id: Types.ObjectId;
+  createdAt: Date;
+}
+
 @Injectable()
 export class MessageService {
   constructor(
-    @InjectModel(Message.name) private readonly messageModel: Model<Message>,
-    @Inject('NOTIFICATION_SERVICE') private readonly notificationClient: ClientProxy,
+    @InjectModel(Message.name)
+    private readonly messageModel: Model<MessageDocument>,
+    @Inject('NOTIFICATION_SERVICE')
+    private readonly notificationClient: ClientProxy,
     @Inject('CHAT_SERVICE') private readonly chatClient: ClientProxy,
   ) {}
 
@@ -27,7 +34,7 @@ export class MessageService {
       roomId: message.roomId,
       senderId: message.senderId,
       content: message.content,
-      timestamp: (message as any).createdAt,
+      timestamp: message.createdAt,
     };
 
     this.notificationClient.emit('message.sent', eventPayload);
@@ -41,14 +48,12 @@ export class MessageService {
     limit: number = 50,
     before?: string,
   ): Promise<Message[]> {
-    const query: any = { roomId };
-
-    if (before) {
-      query._id = { $lt: before };
-    }
-
     const messages = await this.messageModel
-      .find(query)
+      .find(
+        before
+          ? { roomId, _id: { $lt: new Types.ObjectId(before) } }
+          : { roomId },
+      )
       .sort({ createdAt: -1 })
       .limit(limit)
       .exec();
@@ -67,11 +72,13 @@ export class MessageService {
   }
 
   async markRoomAsRead(roomId: string, userId: string): Promise<void> {
-    await this.messageModel.updateMany(
-      { roomId, readBy: { $ne: userId } },
-      { $addToSet: { readBy: userId } }
-    ).exec();
-    
+    await this.messageModel
+      .updateMany(
+        { roomId, readBy: { $ne: userId } },
+        { $addToSet: { readBy: userId } },
+      )
+      .exec();
+
     // Notify other participants via RabbitMQ
     this.chatClient.emit('messages.read', { roomId, userId });
   }

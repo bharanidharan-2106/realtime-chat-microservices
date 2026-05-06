@@ -35,7 +35,8 @@ export class UserService {
   }
 
   async search(query: string): Promise<User[]> {
-    return this.userRepo.createQueryBuilder('user')
+    return this.userRepo
+      .createQueryBuilder('user')
       .where('user.username ILIKE :query', { query: `%${query}%` })
       .orWhere('user.email ILIKE :query', { query: `%${query}%` })
       .limit(10)

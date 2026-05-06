@@ -29,15 +29,18 @@ export class UserController {
   @Get('me')
   async getMe(@Request() req: AuthenticatedRequest) {
     const user = await this.userService.findById(req.user.userId);
-    const { password, ...result } = user;
+    const { password: _password, ...result } = user;
     return result;
   }
 
   @UseGuards(JwtAuthGuard)
   @Patch('me')
-  async updateMe(@Request() req: AuthenticatedRequest, @Body() dto: UpdateProfileDto) {
+  async updateMe(
+    @Request() req: AuthenticatedRequest,
+    @Body() dto: UpdateProfileDto,
+  ) {
     const user = await this.userService.update(req.user.userId, dto);
-    const { password, ...result } = user;
+    const { password: _password, ...result } = user;
     return result;
   }
 
@@ -45,7 +48,7 @@ export class UserController {
   @Get(':id')
   async getUser(@Param('id') id: string) {
     const user = await this.userService.findById(id);
-    const { password, ...result } = user;
+    const { password: _password, ...result } = user;
     return result;
   }
 
@@ -53,11 +56,11 @@ export class UserController {
   async getUsers(@Query('ids') ids: string, @Query('q') query: string) {
     if (query) {
       const users = await this.userService.search(query);
-      return users.map(({ password, ...rest }) => rest);
+      return users.map(({ password: _password, ...rest }) => rest);
     }
     if (!ids) return [];
     const idArray = ids.split(',');
     const users = await this.userService.findByIds(idArray);
-    return users.map(({ password, ...rest }) => rest);
+    return users.map(({ password: _password, ...rest }) => rest);
   }
 }

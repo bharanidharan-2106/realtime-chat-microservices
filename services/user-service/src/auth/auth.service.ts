@@ -40,7 +40,7 @@ export class AuthService {
       username: user.username,
     });
 
-    const { password, ...result } = user;
+    const { password: _password, ...result } = user;
     return result;
   }
 
@@ -55,7 +55,11 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    const payload = { sub: user.id, email: user.email, username: user.username };
+    const payload = {
+      sub: user.id,
+      email: user.email,
+      username: user.username,
+    };
     const accessToken = this.jwtService.sign(payload);
 
     return {

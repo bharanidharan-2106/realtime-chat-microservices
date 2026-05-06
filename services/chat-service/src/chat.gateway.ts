@@ -13,6 +13,20 @@ import { ChatService } from './chat.service';
 import { Inject } from '@nestjs/common';
 import { ClientProxy, EventPattern, Payload } from '@nestjs/microservices';
 
+interface JwtPayload {
+  sub: string;
+  email: string;
+}
+
+interface SocketData {
+  userId: string;
+  email: string;
+}
+
+interface RoomDocument {
+  _id: { toString(): string };
+}
+
 @WebSocketGateway({
   namespace: '/chat',
   cors: { origin: '*' },
@@ -29,23 +43,27 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   async handleConnection(client: Socket) {
     try {
-      const token =
-        client.handshake.auth?.token ||
-        client.handshake.headers?.authorization?.split(' ')[1];
+      const handshakeAuth = client.handshake.auth as Record<string, unknown>;
+      const authHeader = client.handshake.headers?.authorization;
+      const rawToken: unknown =
+        handshakeAuth?.token ??
+        (typeof authHeader === 'string' ? authHeader.split(' ')[1] : undefined);
 
-      if (!token) {
+      if (!rawToken || typeof rawToken !== 'string') {
         client.disconnect();
         return;
       }
 
-      const payload = this.jwtService.verify(token) as { sub: string; email: string };
-      client.data.userId = payload.sub;
-      client.data.email = payload.email;
+      const payload = this.jwtService.verify<JwtPayload>(rawToken);
+      const socketData = client.data as SocketData;
+      socketData.userId = payload.sub;
+      socketData.email = payload.email;
 
       // Auto-join all rooms the user belongs to
       const rooms = await this.chatService.getUserRooms(payload.sub);
       for (const room of rooms) {
-        client.join((room as any)._id.toString());
+        const roomDoc = room as unknown as RoomDocument;
+        await client.join(roomDoc._id.toString());
       }
 
       console.log(`Client connected: ${payload.sub}`);
@@ -55,7 +73,8 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   handleDisconnect(client: Socket) {
-    console.log(`Client disconnected: ${client.data?.userId}`);
+    const socketData = client.data as Partial<SocketData>;
+    console.log(`Client disconnected: ${socketData?.userId ?? 'unknown'}`);
   }
 
   @SubscribeMessage('send_message')
@@ -63,9 +82,10 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @ConnectedSocket() client: Socket,
     @MessageBody() payload: { roomId: string; content: string },
   ) {
+    const socketData = client.data as SocketData;
     const message = {
       roomId: payload.roomId,
-      senderId: client.data.userId,
+      senderId: socketData.userId,
       content: payload.content,
       timestamp: new Date().toISOString(),
     };
@@ -76,33 +96,33 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     // Save to message-service via RabbitMQ
     this.messageClient.emit('message.create', {
       roomId: payload.roomId,
-      senderId: client.data.userId,
+      senderId: socketData.userId,
       content: payload.content,
     });
 
     return message;
   }
 
-  @SubscribeMessage('join_room')
-  handleJoinRoom(
+  async handleJoinRoom(
     @ConnectedSocket() client: Socket,
     @MessageBody() payload: { roomId: string },
   ) {
-    client.join(payload.roomId);
+    await client.join(payload.roomId);
+    const socketData = client.data as SocketData;
     this.server.to(payload.roomId).emit('user_joined', {
-      userId: client.data.userId,
+      userId: socketData.userId,
       roomId: payload.roomId,
     });
   }
 
-  @SubscribeMessage('leave_room')
-  handleLeaveRoom(
+  async handleLeaveRoom(
     @ConnectedSocket() client: Socket,
     @MessageBody() payload: { roomId: string },
   ) {
-    client.leave(payload.roomId);
+    await client.leave(payload.roomId);
+    const socketData = client.data as SocketData;
     this.server.to(payload.roomId).emit('user_left', {
-      userId: client.data.userId,
+      userId: socketData.userId,
       roomId: payload.roomId,
     });
   }
@@ -112,8 +132,9 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @ConnectedSocket() client: Socket,
     @MessageBody() payload: { roomId: string },
   ) {
+    const socketData = client.data as SocketData;
     client.to(payload.roomId).emit('user_typing', {
-      userId: client.data.userId,
+      userId: socketData.userId,
       roomId: payload.roomId,
     });
   }
@@ -123,21 +144,18 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   async handleInvitationAccepted(
     @Payload() data: { roomId: string; participants: string[] },
   ) {
-    // Find all connected sockets for these participants and make them join the room
     const sockets = await this.server.fetchSockets();
     for (const socket of sockets) {
-      if (data.participants.includes(socket.data.userId)) {
+      const socketData = socket.data as Partial<SocketData>;
+      if (socketData.userId && data.participants.includes(socketData.userId)) {
         socket.join(data.roomId);
-        // Tell the client to refresh their room list or navigate
         socket.emit('room_created', { roomId: data.roomId });
       }
     }
   }
 
   @EventPattern('messages.read')
-  handleMessagesRead(
-    @Payload() data: { roomId: string; userId: string },
-  ) {
+  handleMessagesRead(@Payload() data: { roomId: string; userId: string }) {
     this.server.to(data.roomId).emit('messages_read', data);
   }
 }

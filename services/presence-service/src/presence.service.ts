@@ -15,7 +15,15 @@ export class PresenceService {
 
   async setOnline(userId: string, socketId: string): Promise<void> {
     const key = `presence:${userId}`;
-    await this.redis.hset(key, 'status', 'online', 'lastSeen', Date.now().toString(), 'socketId', socketId);
+    await this.redis.hset(
+      key,
+      'status',
+      'online',
+      'lastSeen',
+      Date.now().toString(),
+      'socketId',
+      socketId,
+    );
     await this.redis.expire(key, 60);
     await this.redis.sadd('online_users', userId);
   }
@@ -29,7 +37,9 @@ export class PresenceService {
     await this.redis.srem('online_users', userId);
   }
 
-  async getStatus(userId: string): Promise<{ isOnline: boolean; lastSeen: string | null }> {
+  async getStatus(
+    userId: string,
+  ): Promise<{ isOnline: boolean; lastSeen: string | null }> {
     const result = await this.redis.hgetall(`presence:${userId}`);
     return {
       isOnline: !!result.status,
@@ -41,8 +51,13 @@ export class PresenceService {
     return this.redis.smembers('online_users');
   }
 
-  async getBatchStatus(ids: string[]): Promise<Record<string, { isOnline: boolean; lastSeen: string | null }>> {
-    const result: Record<string, { isOnline: boolean; lastSeen: string | null }> = {};
+  async getBatchStatus(
+    ids: string[],
+  ): Promise<Record<string, { isOnline: boolean; lastSeen: string | null }>> {
+    const result: Record<
+      string,
+      { isOnline: boolean; lastSeen: string | null }
+    > = {};
     for (const id of ids) {
       result[id] = await this.getStatus(id);
     }

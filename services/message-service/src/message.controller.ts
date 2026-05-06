@@ -29,17 +29,25 @@ export class MessageController {
 
   @Post()
   @UseGuards(JwtAuthGuard)
-  async sendMessage(@Body() dto: SendMessageDto, @Req() req: AuthenticatedRequest) {
+  async sendMessage(
+    @Body() dto: SendMessageDto,
+    @Req() req: AuthenticatedRequest,
+  ) {
     return this.messageService.sendMessage(dto, req.user.userId);
   }
 
   @EventPattern('message.create')
-  async handleMessageCreate(@Payload() data: { roomId: string, content: string, senderId: string }) {
-    return this.messageService.sendMessage({
-      roomId: data.roomId,
-      content: data.content,
-      type: 'text'
-    }, data.senderId);
+  async handleMessageCreate(
+    @Payload() data: { roomId: string; content: string; senderId: string },
+  ) {
+    return this.messageService.sendMessage(
+      {
+        roomId: data.roomId,
+        content: data.content,
+        type: 'text',
+      },
+      data.senderId,
+    );
   }
 
   @Get(':roomId')
@@ -64,7 +72,10 @@ export class MessageController {
 
   @Patch('room/:roomId/read')
   @UseGuards(JwtAuthGuard)
-  async markRoomAsRead(@Param('roomId') roomId: string, @Req() req: AuthenticatedRequest) {
+  async markRoomAsRead(
+    @Param('roomId') roomId: string,
+    @Req() req: AuthenticatedRequest,
+  ) {
     return this.messageService.markRoomAsRead(roomId, req.user.userId);
   }
 }

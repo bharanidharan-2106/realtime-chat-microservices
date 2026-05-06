@@ -13,13 +13,16 @@ import { ClientProxy } from '@nestjs/microservices';
 import { PresenceService } from './presence.service';
 
 @WebSocketGateway({ namespace: '/presence', cors: { origin: '*' } })
-export class PresenceGateway implements OnGatewayConnection, OnGatewayDisconnect {
+export class PresenceGateway
+  implements OnGatewayConnection, OnGatewayDisconnect
+{
   @WebSocketServer() server: Server;
 
   constructor(
     private readonly jwtService: JwtService,
     private readonly presenceService: PresenceService,
-    @Inject('NOTIFICATION_SERVICE') private readonly notificationClient: ClientProxy,
+    @Inject('NOTIFICATION_SERVICE')
+    private readonly notificationClient: ClientProxy,
   ) {}
 
   async handleConnection(client: Socket) {

@@ -27,7 +27,7 @@ export class NotificationGateway
       const payload = this.jwtService.verify(token);
       client.data.userId = payload.sub;
       // Join personal room
-      client.join(`user:${payload.sub}`);
+      await client.join(`user:${payload.sub}`);
     } catch {
       client.disconnect();
     }
