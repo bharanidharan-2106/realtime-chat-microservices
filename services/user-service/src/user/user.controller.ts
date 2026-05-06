@@ -41,7 +41,11 @@ export class UserController {
   }
 
   @Get()
-  async getUsers(@Query('ids') ids: string) {
+  async getUsers(@Query('ids') ids: string, @Query('q') query: string) {
+    if (query) {
+      const users = await this.userService.search(query);
+      return users.map(({ password, ...rest }) => rest);
+    }
     if (!ids) return [];
     const idArray = ids.split(',');
     const users = await this.userService.findByIds(idArray);

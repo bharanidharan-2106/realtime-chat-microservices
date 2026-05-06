@@ -33,4 +33,12 @@ export class UserService {
     await this.userRepo.update(id, data);
     return this.findById(id);
   }
+
+  async search(query: string): Promise<User[]> {
+    return this.userRepo.createQueryBuilder('user')
+      .where('user.username ILIKE :query', { query: `%${query}%` })
+      .orWhere('user.email ILIKE :query', { query: `%${query}%` })
+      .limit(10)
+      .getMany();
+  }
 }

@@ -59,6 +59,22 @@ export class ChatService {
     return room;
   }
 
+  async addParticipants(roomId: string, userIds: string[]): Promise<ChatRoom> {
+    const room = await this.getRoomById(roomId);
+    let added = false;
+    for (const userId of userIds) {
+      if (!room.participants.includes(userId)) {
+        room.participants.push(userId);
+        added = true;
+      }
+    }
+    if (added) {
+      await room.save();
+      // Notify new participants or room about update
+    }
+    return room;
+  }
+
   async leaveRoom(roomId: string, userId: string): Promise<ChatRoom> {
     const room = await this.getRoomById(roomId);
     room.participants = room.participants.filter((p) => p !== userId);
@@ -71,6 +87,16 @@ export class ChatService {
     });
 
     return room;
+  }
+
+  async deleteRoom(roomId: string): Promise<void> {
+    const room = await this.getRoomById(roomId);
+    await this.chatRoomModel.deleteOne({ _id: roomId }).exec();
+    
+    this.notificationClient.emit('room.deleted', {
+      roomId,
+      participants: room.participants,
+    });
   }
 
   async updateLastMessage(roomId: string): Promise<void> {

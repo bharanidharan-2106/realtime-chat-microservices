@@ -2,6 +2,7 @@ import {
   Controller,
   Get,
   Post,
+  Delete,
   Param,
   Body,
   UseGuards,
@@ -41,9 +42,21 @@ export class ChatController {
   }
 
   @UseGuards(JwtAuthGuard)
+  @Post('rooms/:id/participants')
+  async addParticipants(@Param('id') id: string, @Body('userIds') userIds: string[]) {
+    return this.chatService.addParticipants(id, userIds);
+  }
+
+  @UseGuards(JwtAuthGuard)
   @Post('rooms/:id/leave')
   async leaveRoom(@Param('id') id: string, @Request() req) {
     return this.chatService.leaveRoom(id, req.user.userId);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Delete('rooms/:id')
+  async deleteRoom(@Param('id') id: string) {
+    return this.chatService.deleteRoom(id);
   }
 
   // RabbitMQ consumer: update lastMessageAt when a message is sent
