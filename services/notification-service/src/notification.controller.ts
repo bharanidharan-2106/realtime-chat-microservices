@@ -11,6 +11,15 @@ import { RmqContext } from '@nestjs/microservices';
 import { NotificationService } from './notification.service';
 import { NotificationGateway } from './notification.gateway';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { Request as ExpressRequest } from 'express';
+
+interface AuthenticatedRequest extends ExpressRequest {
+  user: {
+    userId: string;
+    email: string;
+    username?: string;
+  };
+}
 
 @Controller('notifications')
 export class NotificationController {
@@ -21,19 +30,19 @@ export class NotificationController {
 
   @Get('/')
   @UseGuards(JwtAuthGuard)
-  async getNotifications(@Req() req: any) {
+  async getNotifications(@Req() req: AuthenticatedRequest) {
     return this.notificationService.getNotifications(req.user.userId);
   }
 
   @Patch(':id/read')
   @UseGuards(JwtAuthGuard)
-  async markAsRead(@Req() req: any, @Param('id') id: string) {
+  async markAsRead(@Req() req: AuthenticatedRequest, @Param('id') id: string) {
     await this.notificationService.markAsRead(req.user.userId, id);
     return { success: true };
   }
 
   @EventPattern('message.sent')
-  async handleMessageSent(@Payload() data: any, @Ctx() context: RmqContext) {
+  async handleMessageSent(@Payload() data: { roomId: string; senderId: string; content: string; participants: string[] }, @Ctx() context: RmqContext) {
     const channel = context.getChannelRef();
     const originalMsg = context.getMessage();
 
@@ -62,7 +71,7 @@ export class NotificationController {
   }
 
   @EventPattern('user.created')
-  async handleUserCreated(@Payload() data: any, @Ctx() context: RmqContext) {
+  async handleUserCreated(@Payload() data: { userId: string; username: string; email: string }, @Ctx() context: RmqContext) {
     const channel = context.getChannelRef();
     const originalMsg = context.getMessage();
 
@@ -86,7 +95,7 @@ export class NotificationController {
 
   @EventPattern('user.joined_room')
   async handleUserJoinedRoom(
-    @Payload() data: any,
+    @Payload() data: { roomId: string; userId: string; username: string; participants: string[] },
     @Ctx() context: RmqContext,
   ) {
     const channel = context.getChannelRef();
@@ -118,7 +127,7 @@ export class NotificationController {
   }
 
   @EventPattern('user.online')
-  async handleUserOnline(@Payload() data: any, @Ctx() context: RmqContext) {
+  async handleUserOnline(@Payload() data: { userId: string }, @Ctx() context: RmqContext) {
     const channel = context.getChannelRef();
     const originalMsg = context.getMessage();
     // Presence updates handled by gateway broadcast
@@ -126,7 +135,7 @@ export class NotificationController {
   }
 
   @EventPattern('user.offline')
-  async handleUserOffline(@Payload() data: any, @Ctx() context: RmqContext) {
+  async handleUserOffline(@Payload() data: { userId: string }, @Ctx() context: RmqContext) {
     const channel = context.getChannelRef();
     const originalMsg = context.getMessage();
     // Presence updates handled by gateway broadcast

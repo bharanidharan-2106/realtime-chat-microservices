@@ -1,13 +1,13 @@
 'use client';
 
-import { use, useEffect, useState } from 'react';
-import { useParams } from 'next/navigation';
+import { use, useEffect } from 'react';
+import { Message } from '@/types';
 import { useChatStore } from '@/stores/chatStore';
 import { getChatSocket } from '@/lib/socket';
 import api from '@/lib/api';
 import ChatWindow from '@/components/chat/ChatWindow';
 
-export default function ChatRoomPage({ params }: { params: any }) {
+export default function ChatRoomPage({ params }: { params: Promise<{ roomId: string }> | { roomId: string } }) {
   // Support both Next.js 14 (sync) and 15+ (async/Promise) params
   const resolvedParams = params instanceof Promise ? use(params) : params;
   const roomId = resolvedParams?.roomId;
@@ -26,7 +26,7 @@ export default function ChatRoomPage({ params }: { params: any }) {
     // Fetch message history
     if (!messages[roomId]) {
       api.get(`/messages/${roomId}`).then(({ data }) => {
-        setMessages(roomId, data.map((m: any) => ({ ...m, id: m._id || m.id })));
+        setMessages(roomId, data.map((m: Message) => ({ ...m, id: m._id || m.id })));
         // Mark as read after fetching
         api.patch(`/messages/room/${roomId}/read`).catch(console.error);
       }).catch(console.error);

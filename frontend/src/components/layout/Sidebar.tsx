@@ -1,9 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { usePathname, useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/stores/authStore';
 import { useChatStore } from '@/stores/chatStore';
+import { Room } from '@/types';
 import Avatar from '@/components/ui/Avatar';
 import api from '@/lib/api';
 
@@ -14,7 +15,7 @@ interface SidebarProps {
 export default function Sidebar({ onClose }: SidebarProps) {
   const { user } = useAuthStore();
   const { rooms, activeRoomId, invitations, setInvitations, setRooms } = useChatStore();
-  const pathname = usePathname();
+  // const pathname = usePathname();
   const router = useRouter();
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
@@ -23,7 +24,7 @@ export default function Sidebar({ onClose }: SidebarProps) {
   const directChats = rooms.filter(r => r.type === 'direct');
   const groupChats = rooms.filter(r => r.type === 'group');
 
-  const getRoomDisplayName = (room: any) => {
+  const getRoomDisplayName = (room: Room) => {
     if (room.type === 'direct' && room.participantNames) {
       const otherId = room.participants.find((id: string) => id !== user?.id);
       return room.participantNames[otherId] || room.name;
@@ -263,7 +264,7 @@ export default function Sidebar({ onClose }: SidebarProps) {
                   </svg>
                 </button>
               </div>
-              <p className="text-sm text-gray-600 mb-6">Enter the email address of the person you'd like to chat with. We'll send them an invitation.</p>
+              <p className="text-sm text-gray-600 mb-6">Enter the email address of the person you&apos;d like to chat with. We&apos;ll send them an invitation.</p>
               <form onSubmit={handleSendInvite}>
                 <div className="mb-6">
                   <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Email Address</label>

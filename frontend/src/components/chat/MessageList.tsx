@@ -3,13 +3,14 @@
 import { useEffect, useRef } from 'react';
 import { useChatStore } from '@/stores/chatStore';
 import { useAuthStore } from '@/stores/authStore';
+import { Message } from '@/types';
 import MessageBubble from './MessageBubble';
 
 interface MessageListProps {
   roomId: string;
 }
 
-const EMPTY_MESSAGES: any[] = [];
+const EMPTY_MESSAGES: Message[] = [];
 
 export default function MessageList({ roomId }: MessageListProps) {
   const messages = useChatStore((s) => s.messages[roomId] || EMPTY_MESSAGES);

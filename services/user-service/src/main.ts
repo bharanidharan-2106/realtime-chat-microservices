@@ -32,4 +32,4 @@ async function bootstrap() {
   await app.listen(process.env.PORT ?? 3000);
   console.log(`User Service running on port ${process.env.PORT ?? 3000}`);
 }
-bootstrap();
+bootstrap().catch((err) => console.error(err));

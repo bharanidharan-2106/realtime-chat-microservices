@@ -6,6 +6,12 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 
+interface JwtPayload {
+  sub: string;
+  email: string;
+  username?: string;
+}
+
 @Injectable()
 export class JwtAuthGuard implements CanActivate {
   constructor(private readonly jwtService: JwtService) {}
@@ -20,7 +26,7 @@ export class JwtAuthGuard implements CanActivate {
 
     try {
       const token = authHeader.split(' ')[1];
-      const payload = this.jwtService.verify(token);
+      const payload = this.jwtService.verify(token) as JwtPayload;
       request.user = { userId: payload.sub, email: payload.email };
       return true;
     } catch {

@@ -10,8 +10,10 @@ import { CreateRoomDto } from './dto/create-room.dto';
 export class ChatService {
   constructor(
     @InjectModel(ChatRoom.name) private readonly chatRoomModel: Model<ChatRoom>,
-    @InjectModel(Invitation.name) private readonly invitationModel: Model<Invitation>,
-    @Inject('NOTIFICATION_SERVICE') private readonly notificationClient: ClientProxy,
+    @InjectModel(Invitation.name)
+    private readonly invitationModel: Model<Invitation>,
+    @Inject('NOTIFICATION_SERVICE')
+    private readonly notificationClient: ClientProxy,
     @Inject('CHAT_SERVICE') private readonly chatClient: ClientProxy,
   ) {}
 
@@ -92,7 +94,7 @@ export class ChatService {
   async deleteRoom(roomId: string): Promise<void> {
     const room = await this.getRoomById(roomId);
     await this.chatRoomModel.deleteOne({ _id: roomId }).exec();
-    
+
     this.notificationClient.emit('room.deleted', {
       roomId,
       participants: room.participants,
@@ -106,18 +108,27 @@ export class ChatService {
   }
 
   // Invitation methods
-  async sendInvitation(senderId: string, senderEmail: string, senderUsername: string, receiverEmail: string): Promise<Invitation> {
+  async sendInvitation(
+    senderId: string,
+    senderEmail: string,
+    senderUsername: string,
+    receiverEmail: string,
+  ): Promise<Invitation> {
     // Check if a direct room already exists
-    const existingRoom = await this.chatRoomModel.findOne({
-      type: 'direct',
-      participants: { $all: [senderId] } // We don't have receiverId yet, so we can only check by sender and invitation status
-    }).exec();
+    /*
+    const existingRoom = await this.chatRoomModel
+      .findOne({
+        type: 'direct',
+        participants: { $all: [senderId] }, // We don't have receiverId yet, so we can only check by sender and invitation status
+      })
+      .exec();
+    */
 
     // Check if invitation already exists
     const existing = await this.invitationModel.findOne({
       senderId,
       receiverEmail,
-      status: 'pending'
+      status: 'pending',
     });
     if (existing) return existing;
 
@@ -126,7 +137,7 @@ export class ChatService {
       senderEmail,
       senderUsername,
       receiverEmail,
-      status: 'pending'
+      status: 'pending',
     });
 
     this.notificationClient.emit('invitation.sent', {
@@ -141,19 +152,28 @@ export class ChatService {
   }
 
   async getPendingInvitations(email: string): Promise<Invitation[]> {
-    return this.invitationModel.find({ receiverEmail: email, status: 'pending' }).exec();
+    return this.invitationModel
+      .find({ receiverEmail: email, status: 'pending' })
+      .exec();
   }
 
-  async acceptInvitation(invitationId: string, userId: string, receiverUsername: string): Promise<ChatRoom> {
+  async acceptInvitation(
+    invitationId: string,
+    userId: string,
+    receiverUsername: string,
+  ): Promise<ChatRoom> {
     const invitation = await this.invitationModel.findById(invitationId);
     if (!invitation) throw new NotFoundException('Invitation not found');
-    if (invitation.status !== 'pending') throw new Error('Invitation already processed');
+    if (invitation.status !== 'pending')
+      throw new Error('Invitation already processed');
 
     // Check if a room already exists
-    let room = await this.chatRoomModel.findOne({
-      type: 'direct',
-      participants: { $all: [invitation.senderId, userId] }
-    }).exec();
+    let room = await this.chatRoomModel
+      .findOne({
+        type: 'direct',
+        participants: { $all: [invitation.senderId, userId] },
+      })
+      .exec();
 
     if (!room) {
       room = await this.chatRoomModel.create({
@@ -182,6 +202,8 @@ export class ChatService {
   }
 
   async rejectInvitation(invitationId: string): Promise<void> {
-    await this.invitationModel.findByIdAndUpdate(invitationId, { status: 'rejected' });
+    await this.invitationModel.findByIdAndUpdate(invitationId, {
+      status: 'rejected',
+    });
   }
 }

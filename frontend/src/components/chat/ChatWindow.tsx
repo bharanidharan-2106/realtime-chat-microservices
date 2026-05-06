@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/stores/authStore';
 import { useChatStore } from '@/stores/chatStore';
+import { Room } from '@/types';
 import MessageList from './MessageList';
 import MessageInput from './MessageInput';
 import TypingIndicator from './TypingIndicator';
@@ -72,7 +73,7 @@ export default function ChatWindow({ roomId }: ChatWindowProps) {
     }
   };
 
-  const getRoomDisplayName = (room: any) => {
+  const getRoomDisplayName = (room: Room | undefined) => {
     if (!room) return 'Chat Room';
     if (room.type === 'direct' && room.participantNames) {
       const otherId = room.participants.find((id: string) => id !== user?.id);

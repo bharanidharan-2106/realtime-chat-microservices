@@ -11,6 +11,15 @@ import {
 import { UserService } from './user.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { UpdateProfileDto } from './dto/update-profile.dto';
+import { Request as ExpressRequest } from 'express';
+
+interface AuthenticatedRequest extends ExpressRequest {
+  user: {
+    userId: string;
+    email: string;
+    username?: string;
+  };
+}
 
 @Controller('users')
 export class UserController {
@@ -18,7 +27,7 @@ export class UserController {
 
   @UseGuards(JwtAuthGuard)
   @Get('me')
-  async getMe(@Request() req) {
+  async getMe(@Request() req: AuthenticatedRequest) {
     const user = await this.userService.findById(req.user.userId);
     const { password, ...result } = user;
     return result;
@@ -26,7 +35,7 @@ export class UserController {
 
   @UseGuards(JwtAuthGuard)
   @Patch('me')
-  async updateMe(@Request() req, @Body() dto: UpdateProfileDto) {
+  async updateMe(@Request() req: AuthenticatedRequest, @Body() dto: UpdateProfileDto) {
     const user = await this.userService.update(req.user.userId, dto);
     const { password, ...result } = user;
     return result;

@@ -34,7 +34,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
       addMessage(msg.roomId, { ...msg, id: msg.messageId || msg._id || msg.id });
     });
 
-    chat.on('room_created', ({ roomId }) => {
+    chat.on('room_created', () => {
       api.get('/rooms').then(({ data }) => setRooms(data)).catch(console.error);
       api.get('/invitations').then(({ data }) => setInvitations(data)).catch(console.error);
     });
@@ -52,7 +52,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     return () => {
       disconnectAll();
     };
-  }, [isAuthenticated, setRooms, addMessage, setUserOnline, setUserOffline]);
+  }, [isAuthenticated, setRooms, addMessage, setUserOnline, setUserOffline, setInvitations]);
 
   return (
     <div className="h-screen flex overflow-hidden">

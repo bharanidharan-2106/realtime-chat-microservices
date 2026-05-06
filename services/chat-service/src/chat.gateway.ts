@@ -38,14 +38,14 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
         return;
       }
 
-      const payload = this.jwtService.verify(token);
+      const payload = this.jwtService.verify(token) as { sub: string; email: string };
       client.data.userId = payload.sub;
       client.data.email = payload.email;
 
       // Auto-join all rooms the user belongs to
       const rooms = await this.chatService.getUserRooms(payload.sub);
       for (const room of rooms) {
-        client.join(room._id.toString());
+        client.join((room as any)._id.toString());
       }
 
       console.log(`Client connected: ${payload.sub}`);
@@ -59,7 +59,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   @SubscribeMessage('send_message')
-  async handleMessage(
+  handleMessage(
     @ConnectedSocket() client: Socket,
     @MessageBody() payload: { roomId: string; content: string },
   ) {
@@ -84,7 +84,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   @SubscribeMessage('join_room')
-  async handleJoinRoom(
+  handleJoinRoom(
     @ConnectedSocket() client: Socket,
     @MessageBody() payload: { roomId: string },
   ) {
@@ -96,7 +96,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   @SubscribeMessage('leave_room')
-  async handleLeaveRoom(
+  handleLeaveRoom(
     @ConnectedSocket() client: Socket,
     @MessageBody() payload: { roomId: string },
   ) {
@@ -108,7 +108,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   @SubscribeMessage('typing')
-  async handleTyping(
+  handleTyping(
     @ConnectedSocket() client: Socket,
     @MessageBody() payload: { roomId: string },
   ) {
@@ -120,7 +120,9 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   // Handle invitation acceptance to join users to the new room immediately
   @EventPattern('invitation.accepted')
-  async handleInvitationAccepted(@Payload() data: { roomId: string; participants: string[] }) {
+  async handleInvitationAccepted(
+    @Payload() data: { roomId: string; participants: string[] },
+  ) {
     // Find all connected sockets for these participants and make them join the room
     const sockets = await this.server.fetchSockets();
     for (const socket of sockets) {
@@ -133,7 +135,9 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   @EventPattern('messages.read')
-  async handleMessagesRead(@Payload() data: { roomId: string; userId: string }) {
+  handleMessagesRead(
+    @Payload() data: { roomId: string; userId: string },
+  ) {
     this.server.to(data.roomId).emit('messages_read', data);
   }
 }
