@@ -7,8 +7,8 @@ import { getChatSocket } from '@/lib/socket';
 import api from '@/lib/api';
 import ChatWindow from '@/components/chat/ChatWindow';
 
-export default function ChatRoomPage({ params }: { params: any }) {
-  const resolvedParams: any = use(params);
+export default function ChatRoomPage({ params }: { params: Promise<{ roomId: string }> }) {
+  const resolvedParams = use(params);
   const roomId = resolvedParams?.roomId;
   
   const { setActiveRoom, setMessages, messages } = useChatStore();
