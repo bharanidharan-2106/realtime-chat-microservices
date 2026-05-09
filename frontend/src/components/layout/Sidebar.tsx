@@ -27,7 +27,9 @@ export default function Sidebar({ onClose }: SidebarProps) {
   const getRoomDisplayName = (room: Room) => {
     if (room.type === 'direct' && room.participantNames) {
       const otherId = room.participants.find((id: string) => id !== user?.id);
-      return room.participantNames[otherId] || room.name;
+      if (otherId && room.participantNames[otherId]) {
+        return room.participantNames[otherId];
+      }
     }
     return room.name;
   };

@@ -77,7 +77,7 @@ export default function ChatWindow({ roomId }: ChatWindowProps) {
     if (!room) return 'Chat Room';
     if (room.type === 'direct' && room.participantNames) {
       const otherId = room.participants.find((id: string) => id !== user?.id);
-      return room.participantNames[otherId] || room.name;
+      return (otherId && room.participantNames[otherId]) || room.name;
     }
     return room.name;
   };
