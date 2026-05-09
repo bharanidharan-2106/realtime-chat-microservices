@@ -27,7 +27,7 @@ export default function ChatWindow({ roomId }: ChatWindowProps) {
   const { user } = useAuthStore();
   const { rooms, setRooms } = useChatStore();
   const router = useRouter();
-  const room = rooms.find((r) => (r._id || r.id) === roomId);
+  const room = rooms.find((r) => String(r._id || r.id) === String(roomId));
   const [showAddMemberModal, setShowAddMemberModal] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [selectedUsers, setSelectedUsers] = useState<User[]>([]);
@@ -77,7 +77,9 @@ export default function ChatWindow({ roomId }: ChatWindowProps) {
     if (!room) return 'Chat Room';
     if (room.type === 'direct' && room.participantNames) {
       const otherId = room.participants.find((id: string) => id !== user?.id);
-      return (otherId && room.participantNames[otherId]) || room.name;
+      if (otherId && room.participantNames[otherId]) {
+        return room.participantNames[otherId];
+      }
     }
     return room.name;
   };

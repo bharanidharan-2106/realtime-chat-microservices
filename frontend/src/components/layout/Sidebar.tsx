@@ -159,8 +159,8 @@ export default function Sidebar({ onClose }: SidebarProps) {
         {/* Direct Chats */}
         <p className="px-3 py-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Recent Chats</p>
         {directChats.map((room) => {
-          const id = room._id || room.id;
-          const isActive = activeRoomId === id;
+          const id = String(room._id || room.id);
+          const isActive = String(activeRoomId) === id;
           return (
             <button
               key={id}
@@ -193,8 +193,8 @@ export default function Sidebar({ onClose }: SidebarProps) {
           <>
             <p className="px-3 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Channels</p>
             {groupChats.map((room) => {
-              const id = room._id || room.id;
-              const isActive = activeRoomId === id;
+              const id = String(room._id || room.id);
+              const isActive = String(activeRoomId) === id;
               return (
                 <button
                   key={id}

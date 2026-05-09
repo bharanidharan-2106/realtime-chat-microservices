@@ -7,9 +7,8 @@ import { getChatSocket } from '@/lib/socket';
 import api from '@/lib/api';
 import ChatWindow from '@/components/chat/ChatWindow';
 
-export default function ChatRoomPage({ params }: { params: Promise<{ roomId: string }> | { roomId: string } }) {
-  // Support both Next.js 14 (sync) and 15+ (async/Promise) params
-  const resolvedParams = params instanceof Promise ? use(params) : params;
+export default function ChatRoomPage({ params }: { params: any }) {
+  const resolvedParams: any = use(params);
   const roomId = resolvedParams?.roomId;
   
   const { setActiveRoom, setMessages, messages } = useChatStore();
